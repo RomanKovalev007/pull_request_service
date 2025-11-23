@@ -26,6 +26,7 @@ type Service interface{
 
 var (
 	defaultHeaderTimeout = time.Second * 5
+	defaultIdleTimeout = time.Second * 30
 )
 
 type Server struct {
@@ -37,6 +38,7 @@ func NewServer(port string, db *repository.Repo) *Server {
 	srv := http.Server{
 		Addr:              ":" + port,
 		Handler:           nil,
+		IdleTimeout: defaultIdleTimeout,
 		ReadHeaderTimeout: defaultHeaderTimeout,
 	}
 	return &Server{
@@ -54,6 +56,10 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 func (s *Server) RegisterHandlers() error {
+	statsRepo := repository.NewStatsRepository(s.repo.DB)
+    statsService := service.NewStatsService(statsRepo)
+    statsHandler := NewStatsHandler(statsService)
+
 	service := service.NewService(s.repo)
 
 	teamHandler := NewTeamHandler(service)
@@ -63,6 +69,8 @@ func (s *Server) RegisterHandlers() error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", s.HealthCheck)
+
+	mux.HandleFunc("/stats", statsHandler.GetStats)
 
 	mux.HandleFunc("/team/add",
 	func(w http.ResponseWriter, r *http.Request) {
