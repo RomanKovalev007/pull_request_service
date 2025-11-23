@@ -21,6 +21,8 @@
 
 ```bash
 # Запуск сервиса
+docker-compose up
+# или
 make docker-run
 
 # Запуск интеграционных тестов
