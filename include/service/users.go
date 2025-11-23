@@ -3,13 +3,27 @@ package service
 import (
 	"context"
 
+	"github.com/RomanKovalev007/pull_request_service/include/models"
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-func (s *Service) SetUserIsActive(ctx context.Context, req transport.UserSetActiveRequest) (*transport.UserSetActiveResponse, error) {
+type userRepository interface{
+	SetUserIsActive(ctx context.Context, userID string, isActive bool) (*models.User, error)
+	GetUserPullRequests(ctx context.Context,userID string) ([]models.PullRequestShort, error)
+}
+
+type UserService struct{
+	userRepo userRepository
+}
+
+func NewUserService(userRepo userRepository) *UserService{
+	return &UserService{userRepo: userRepo}
+}
+
+func (s *UserService) SetUserIsActive(ctx context.Context, req transport.UserSetActiveRequest) (*transport.UserSetActiveResponse, error) {
 	s.validateSetUserIsActive(req)
 
-	user, err := s.db.SetUserIsActive(ctx, req.UserID, req.IsActive)
+	user, err := s.userRepo.SetUserIsActive(ctx, req.UserID, req.IsActive)
 	if err != nil {
 		return nil, &ServiceError{Code: err.Error(), Message: "failed to set user active status"}
 	}
@@ -21,10 +35,10 @@ func (s *Service) SetUserIsActive(ctx context.Context, req transport.UserSetActi
     return &resp, nil
 }
 
-func (s *Service) GetUserPullRequests(ctx context.Context, userID string) (*transport.UserPRsResponse, error) {
+func (s *UserService) GetUserPullRequests(ctx context.Context, userID string) (*transport.UserPRsResponse, error) {
     s.validateGetUserPullRequests(userID)
 
-	prs, err := s.db.GetUserPullRequests(ctx, userID)
+	prs, err := s.userRepo.GetUserPullRequests(ctx, userID)
 	if err != nil {
 		return nil, &ServiceError{Code: err.Error(), Message: "failed to get user pull requests"}
 	}

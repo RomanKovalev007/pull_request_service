@@ -3,14 +3,23 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/RomanKovalev007/pull_request_service/include/models"
 )
 
-func (r *Repo) CreatePullRequest(ctx context.Context, req models.PullRequestShort) (*models.PullRequest, error) {
-    tx, err := r.DB.Begin()
+type PrRepository struct{
+    db *sql.DB
+}
+
+func NewPrRepository(db *sql.DB) *PrRepository {
+    return &PrRepository{db: db}
+}
+
+func (r *PrRepository) CreatePullRequest(ctx context.Context, req models.PullRequestShort) (*models.PullRequest, error) {
+    tx, err := r.db.Begin()
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to begin tx: %w", err)
     }
     defer tx.Rollback()
 
@@ -20,7 +29,7 @@ func (r *Repo) CreatePullRequest(ctx context.Context, req models.PullRequestShor
 		WHERE id = $1)`,
 		req.PullRequestID).Scan(&exists)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to check pull request exists: %w", err)
     }
     if exists {
         return nil, ErrPRExists
@@ -35,7 +44,7 @@ func (r *Repo) CreatePullRequest(ctx context.Context, req models.PullRequestShor
     if err == sql.ErrNoRows {
         return nil, ErrNotFound
     } else if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to select author of pr: %w", err)
     }
 
     if !authorActive {
@@ -49,14 +58,14 @@ func (r *Repo) CreatePullRequest(ctx context.Context, req models.PullRequestShor
         LIMIT 2`,
         authorTeam, req.AuthorID)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to select reviewers: %w", err)
     }
     defer rows.Close()
     var reviewers []string
     for rows.Next() {
         var reviewerID string
         if err := rows.Scan(&reviewerID); err != nil {
-            return nil, err
+            return nil, fmt.Errorf("failed to scan reviewers: %w", err)
         }
         reviewers = append(reviewers, reviewerID)
     }
@@ -74,7 +83,7 @@ func (r *Repo) CreatePullRequest(ctx context.Context, req models.PullRequestShor
 		RETURNING id, pull_request_name, author_id, status`,
         req.PullRequestID, req.PullRequestName, req.AuthorID).Scan(&pr.PullRequestID, &pr.PullRequestName, &pr.AuthorID, &pr.Status)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to create pull request: %w", err)
     }
 
 
@@ -84,22 +93,22 @@ func (r *Repo) CreatePullRequest(ctx context.Context, req models.PullRequestShor
             VALUES ($1, $2)`,
             req.PullRequestID, reviewerID)
         if err != nil {
-            return nil, err
+            return nil, fmt.Errorf("failed to create reviewers: %w", err)
         }
     }
     
 
     if err = tx.Commit(); err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to tx: %w", err)
     }
 
     return &pr, nil
 }
 
-func (r *Repo) MergePullRequest(ctx context.Context, prID string) (*models.PullRequest, error) {
-    tx, err := r.DB.Begin()
+func (r *PrRepository) MergePullRequest(ctx context.Context, prID string) (*models.PullRequest, error) {
+    tx, err := r.db.Begin()
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to begin tx: %w", err)
     }
     defer tx.Rollback()
 
@@ -116,7 +125,7 @@ func (r *Repo) MergePullRequest(ctx context.Context, prID string) (*models.PullR
     if err == sql.ErrNoRows {
         return nil, ErrNotFound
     } else if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to merge pr: %w", err)
     }
 
     if mergedAt.Valid {
@@ -127,29 +136,29 @@ func (r *Repo) MergePullRequest(ctx context.Context, prID string) (*models.PullR
         SELECT reviewer_id FROM pr_reviewers 
         WHERE pull_request_id = $1`, prID)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to select reviewers: %w", err)
     }
     defer rows.Close()
 
     for rows.Next() {
         var reviewerID string
         if err := rows.Scan(&reviewerID); err != nil {
-            return nil, err
+            return nil, fmt.Errorf("failed to scan reviewers: %w", err)
         }
         pr.AssignedReviewers = append(pr.AssignedReviewers, reviewerID)
     }
 
     if err = tx.Commit(); err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to tx commit %w", err)
     }
 
     return &pr, nil
 }
 
-func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*models.PullRequest, string, error) {
-    tx, err := r.DB.Begin()
+func (r *PrRepository) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*models.PullRequest, string, error) {
+    tx, err := r.db.Begin()
     if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to begin tx: %w", err)
     }
     defer tx.Rollback()
 
@@ -161,7 +170,7 @@ func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*m
     if err == sql.ErrNoRows {
         return nil, "", ErrNotFound
     } else if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to check pr status: %w", err)
     }
 
     if status == "MERGED" {
@@ -174,7 +183,7 @@ func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*m
 		WHERE pull_request_id = $1 AND reviewer_id = $2)`,
         prID, oldUserID).Scan(&isAssigned)
     if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to check is reviewer: %w", err)
     }
     if !isAssigned {
         return nil, "", ErrNotAssigned
@@ -188,7 +197,7 @@ func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*m
     if err == sql.ErrNoRows {
         return nil, "", ErrNoCandidate
     } else if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to select reviewer team: %w", err)
     }
 
     var newReviewerID string
@@ -205,7 +214,7 @@ func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*m
     if err == sql.ErrNoRows {
         return nil, "", ErrNoCandidate
     } else if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to find new reviewer: %w", err)
     }
 
     _, err = tx.ExecContext(ctx, `
@@ -214,7 +223,7 @@ func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*m
         WHERE pull_request_id = $2 AND reviewer_id = $3`,
         newReviewerID, prID, oldUserID)
     if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to update reviewer: %w", err)
     }
 
     var pr models.PullRequest
@@ -224,26 +233,26 @@ func (r *Repo) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*m
 		WHERE id = $1`, prID).
         Scan(&pr.PullRequestID, &pr.PullRequestName, &pr.AuthorID, &pr.Status, &pr.CreatedAt)
     if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to select pr: %w", err)
     }
 
     rows, err := tx.QueryContext(ctx, `
         SELECT reviewer_id FROM pr_reviewers WHERE pull_request_id = $1`, prID)
     if err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to select new reviewers: %w", err)
     }
     defer rows.Close()
 
     for rows.Next() {
         var reviewerID string
         if err := rows.Scan(&reviewerID); err != nil {
-            return nil, "", err
+            return nil, "", fmt.Errorf("failed to scan reviewers: %w", err)
         }
         pr.AssignedReviewers = append(pr.AssignedReviewers, reviewerID)
     }
 
     if err = tx.Commit(); err != nil {
-        return nil, "", err
+        return nil, "", fmt.Errorf("failed to tx commit: %w", err)
     }
 
     return &pr, newReviewerID, nil

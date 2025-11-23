@@ -1,18 +1,25 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/RomanKovalev007/pull_request_service/include/models"
+	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-type TeamHandler struct{
-	service Service
+type TeamService interface{
+    CreateTeam(ctx context.Context, req models.Team) (*transport.TeamCreateResponse, error)
+    GetTeam(ctx context.Context, teamName string) (*models.Team, error)
 }
 
-func NewTeamHandler(service Service) *TeamHandler{
-	return &TeamHandler{service: service}
+type TeamHandler struct {
+	teamService TeamService
+}
+
+func NewTeamHandler(teamService TeamService) *TeamHandler {
+	return &TeamHandler{teamService: teamService}
 }
 
 func (h *TeamHandler) AddTeam(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +30,7 @@ func (h *TeamHandler) AddTeam(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    result_team, err := h.service.CreateTeam(r.Context(),team)
+    result_team, err := h.teamService.CreateTeam(r.Context(),team)
     if err != nil {
         handleServiceError(w, err)
         return
@@ -44,7 +51,7 @@ func (h *TeamHandler) GetTeam(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    team, err := h.service.GetTeam(r.Context(), teamName)
+    team, err := h.teamService.GetTeam(r.Context(), teamName)
     if err != nil {
         handleServiceError(w, err)
         return

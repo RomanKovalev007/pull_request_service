@@ -1,20 +1,25 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/RomanKovalev007/pull_request_service/include/models"
-	"github.com/RomanKovalev007/pull_request_service/include/service"
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-type UserHandler struct {
-	service *service.Service
+type UserService interface{
+    GetUserPullRequests(ctx context.Context, userID string) (*transport.UserPRsResponse, error)
+    SetUserIsActive(ctx context.Context, req transport.UserSetActiveRequest) (*transport.UserSetActiveResponse, error)
 }
 
-func NewUserHandler(service *service.Service) *UserHandler {
-	return &UserHandler{service: service}
+type UserHandler struct {
+	userService UserService
+}
+
+func NewUserHandler(userService UserService) *UserHandler {
+	return &UserHandler{userService: userService}
 }
 
 func (h *UserHandler) SetUserIsActive(w http.ResponseWriter, r *http.Request){
@@ -25,7 +30,7 @@ func (h *UserHandler) SetUserIsActive(w http.ResponseWriter, r *http.Request){
         return
     }
 
-    result_user, err := h.service.SetUserIsActive(r.Context(), user_request)
+    result_user, err := h.userService.SetUserIsActive(r.Context(), user_request)
     if err != nil {
         handleServiceError(w, err)
         return
@@ -45,7 +50,7 @@ func (h *UserHandler) GetUserPullRequests(w http.ResponseWriter, r *http.Request
         return
     }
 
-    prs, err := h.service.GetUserPullRequests(r.Context(), userID)
+    prs, err := h.userService.GetUserPullRequests(r.Context(), userID)
     if err != nil {
         handleServiceError(w, err)
         return

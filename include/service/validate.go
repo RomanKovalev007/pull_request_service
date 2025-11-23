@@ -5,7 +5,7 @@ import (
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-func (s *Service) validateCreateTeam(team models.Team) *ServiceError{
+func (s *TeamService) validateCreateTeam(team models.Team) *ServiceError{
 	if team.TeamName == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "team_name is required"}
     }
@@ -27,32 +27,32 @@ func (s *Service) validateCreateTeam(team models.Team) *ServiceError{
         }
         userIDs[member.UserID] = true
     }
-    
+
 	return nil
 }
 
-func (s *Service) validateGetTeam(teamName string) *ServiceError{
+func (s *TeamService) validateGetTeam(teamName string) *ServiceError{
 	if teamName == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "team_name is required"}
     }
 	return nil
 }
 
-func (s *Service) validateSetUserIsActive(req transport.UserSetActiveRequest) *ServiceError{
+func (s *UserService) validateSetUserIsActive(req transport.UserSetActiveRequest) *ServiceError{
     if req.UserID == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "user_id is required"}
     }
     return nil
 }
 
-func (s *Service) validateGetUserPullRequests(userID string) *ServiceError{
+func (s *UserService) validateGetUserPullRequests(userID string) *ServiceError{
     if userID == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "user_id is required"}
     }
     return nil
 }
 
-func (s *Service) validateCreatePR(req transport.CreatePRRequest) *ServiceError{
+func (s *PrService) validateCreatePR(req transport.CreatePRRequest) *ServiceError{
     if req.PullRequestID == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "pull_request_id is required"}
     }
@@ -66,7 +66,7 @@ func (s *Service) validateCreatePR(req transport.CreatePRRequest) *ServiceError{
     return nil
 }
 
-func (s *Service) validateMergePR(req transport.MergePRRequest) *ServiceError{
+func (s *PrService) validateMergePR(req transport.MergePRRequest) *ServiceError{
     if req.PullRequestID == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "pull_request_id is required"}
     }
@@ -74,7 +74,7 @@ func (s *Service) validateMergePR(req transport.MergePRRequest) *ServiceError{
     return nil
 }
 
-func (s *Service) validateReassignReviewer(req transport.ReassignRequest) *ServiceError{
+func (s *PrService) validateReassignReviewer(req transport.ReassignRequest) *ServiceError{
     if req.PullRequestID == "" {
         return &ServiceError{Code: ErrInvalidInput.Error(), Message: "pull_request_id is required"}
     }

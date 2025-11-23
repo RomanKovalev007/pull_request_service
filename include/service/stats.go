@@ -5,20 +5,19 @@ import (
 	"time"
 
 	"github.com/RomanKovalev007/pull_request_service/include/models"
-	"github.com/RomanKovalev007/pull_request_service/include/repository"
 )
 
-type StatsRepository interface {
+type statsRepository interface {
 	GetPRStats(ctx context.Context) ([]models.PullRequestStat, error)
 	GetTeamStats(ctx context.Context) ([]models.TeamStat, error)
 	GetUserStats(ctx context.Context) ([]models.UserStat, error)
 }
 
 type StatsService struct {
-    statsRepo StatsRepository
+    statsRepo statsRepository
 }
 
-func NewStatsService(statsRepo *repository.StatsRepository) *StatsService {
+func NewStatsService(statsRepo statsRepository) *StatsService {
     return &StatsService{statsRepo: statsRepo}
 }
 

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -8,13 +9,20 @@ import (
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-type PRHandler struct{
-	service Service
+type PRService interface{
+    CreatePullRequest(ctx context.Context, req transport.CreatePRRequest) (*transport.CreatePRResponse, error)
+    MergePullRequest(ctx context.Context, req transport.MergePRRequest) (*transport.MergePRResponse, error)
+    ReassignReviewer(ctx context.Context, req transport.ReassignRequest) (*transport.ReassignResponse, error)
 }
 
-func NewPRHandler(service Service) *PRHandler{
-	return &PRHandler{service: service}
+type PRHandler struct {
+	prService PRService
 }
+
+func NewPRHandler(prService PRService) *PRHandler {
+	return &PRHandler{prService: prService}
+}
+
 
 func (h *PRHandler) CreatePullRequest(w http.ResponseWriter, r *http.Request) {
     var req transport.CreatePRRequest
@@ -24,7 +32,7 @@ func (h *PRHandler) CreatePullRequest(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    pr, err := h.service.CreatePullRequest(r.Context(), req)
+    pr, err := h.prService.CreatePullRequest(r.Context(), req)
     if err != nil {
         handleServiceError(w, err)
         return
@@ -46,7 +54,7 @@ func (h *PRHandler) MergePullRequest(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    pr, err := h.service.MergePullRequest(r.Context(), req)
+    pr, err := h.prService.MergePullRequest(r.Context(), req)
     if err != nil {
         handleServiceError(w, err)
         return
@@ -67,7 +75,7 @@ func (h *PRHandler) ReassignReviewer(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    pr, err := h.service.ReassignReviewer(r.Context(), req)
+    pr, err := h.prService.ReassignReviewer(r.Context(), req)
     if err != nil {
         handleServiceError(w, err)
         return

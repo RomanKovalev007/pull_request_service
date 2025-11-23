@@ -32,6 +32,11 @@ var (
 type Server struct {
 	srv *http.Server
 	repo  *repository.Repo
+	
+	teamService *service.TeamService
+	userService *service.UserService
+	prService *service.PrService
+	statsService *service.StatsService
 }
 
 func NewServer(port string, db *repository.Repo) *Server {
@@ -44,6 +49,10 @@ func NewServer(port string, db *repository.Repo) *Server {
 	return &Server{
 		srv: &srv,
 		repo:  db,
+		teamService: service.NewTeamService(db.TeamRepository),
+		userService: service.NewUserService(db.UserRepository),
+		prService: service.NewPrService(db.PrRepository),
+		statsService: service.NewStatsService(db.StatsRepository),
 	}
 }
 
@@ -56,15 +65,11 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 func (s *Server) RegisterHandlers() error {
-	statsRepo := repository.NewStatsRepository(s.repo.DB)
-    statsService := service.NewStatsService(statsRepo)
-    statsHandler := NewStatsHandler(statsService)
 
-	service := service.NewService(s.repo)
-
-	teamHandler := NewTeamHandler(service)
-	userHandler := NewUserHandler(service)
-	prHandler := NewPRHandler(service)
+	teamHandler := NewTeamHandler(s.teamService)
+	userHandler := NewUserHandler(s.userService)
+	prHandler := NewPRHandler(s.prService)
+	statsHandler := NewStatsHandler(s.statsService)
 
 	mux := http.NewServeMux()
 
