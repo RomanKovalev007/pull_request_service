@@ -8,17 +8,17 @@ import (
 )
 
 type Config struct {
-	Host     string `env:"POSTGRES_HOST" env-default:"db"`
-	Port     string `env:"POSTGRES_PORT" env-default:"5432"`
-	User     string `env:"POSTGRES_USER" env-default:"postgres"`
-	Password string `env:"POSTGRES_PASSWORD" env-default:"postgres"`
+	DBHost     string `env:"POSTGRES_HOST" env-default:"db"`
+	DBPort     string `env:"POSTGRES_PORT" env-default:"5432"`
+	DBUser     string `env:"POSTGRES_USER" env-default:"postgres"`
+	DBPassword string `env:"POSTGRES_PASSWORD" env-default:"postgres"`
 	DBName   string `env:"POSTGRES_DB" env-default:"pr_reviewer"`
 	DSN      string
 }
 
 func (c *Config) FormatConnectionString() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		c.User, c.Password, c.Host, c.Port, c.DBName)
+		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
 }
 
 type Repo struct {
@@ -33,7 +33,7 @@ type Repo struct {
 
 func NewDB(cfg Config) (*Repo, error) {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {

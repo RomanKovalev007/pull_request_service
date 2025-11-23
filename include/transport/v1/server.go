@@ -32,28 +32,46 @@ var (
 type Server struct {
 	srv *http.Server
 	repo  *repository.Repo
+	mux *http.ServeMux
 	
 	teamService *service.TeamService
 	userService *service.UserService
 	prService *service.PrService
 	statsService *service.StatsService
+	
+	// Добавляем поля для обработчиков
+	teamHandler  *TeamHandler
+	userHandler  *UserHandler
+	prHandler    *PRHandler
+	statsHandler *StatsHandler
 }
 
 func NewServer(port string, db *repository.Repo) *Server {
+    mux := http.NewServeMux()
+    
 	srv := http.Server{
 		Addr:              ":" + port,
-		Handler:           nil,
-		IdleTimeout: defaultIdleTimeout,
+		Handler:           mux,
+		IdleTimeout:       defaultIdleTimeout,
 		ReadHeaderTimeout: defaultHeaderTimeout,
 	}
-	return &Server{
+	
+	server := &Server{
 		srv: &srv,
 		repo:  db,
+		mux: mux,
 		teamService: service.NewTeamService(db.TeamRepository),
 		userService: service.NewUserService(db.UserRepository),
 		prService: service.NewPrService(db.PrRepository),
 		statsService: service.NewStatsService(db.StatsRepository),
 	}
+	
+	server.teamHandler = NewTeamHandler(server.teamService)
+	server.userHandler = NewUserHandler(server.userService)
+	server.prHandler = NewPRHandler(server.prService)
+	server.statsHandler = NewStatsHandler(server.statsService)
+	
+	return server
 }
 
 func (s *Server) Start() error {
@@ -64,83 +82,74 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.srv.Shutdown(ctx)
 }
 
+func (s *Server) GetRouter() http.Handler {
+    return s.mux
+}
+
 func (s *Server) RegisterHandlers() error {
+    if s.mux == nil {
+        s.mux = http.NewServeMux()
+    }
 
-	teamHandler := NewTeamHandler(s.teamService)
-	userHandler := NewUserHandler(s.userService)
-	prHandler := NewPRHandler(s.prService)
-	statsHandler := NewStatsHandler(s.statsService)
+	s.mux.HandleFunc("/health", s.HealthCheck)
+	s.mux.HandleFunc("/stats", s.statsHandler.GetStats)
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", s.HealthCheck)
-
-	mux.HandleFunc("/stats", statsHandler.GetStats)
-
-	mux.HandleFunc("/team/add",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/team/add", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		teamHandler.AddTeam(w, r)
+		s.teamHandler.AddTeam(w, r)
 	})
 
-	mux.HandleFunc("/team/get",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/team/get", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		teamHandler.GetTeam(w, r)
+		s.teamHandler.GetTeam(w, r)
 	})
 
-	mux.HandleFunc("/users/setIsActive",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/users/setIsActive", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		userHandler.SetUserIsActive(w, r)
+		s.userHandler.SetUserIsActive(w, r)
 	})
 
-	mux.HandleFunc("/users/getReview",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/users/getReview", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		userHandler.GetUserPullRequests(w, r)
+		s.userHandler.GetUserPullRequests(w, r)
 	})
 
-	mux.HandleFunc("/pullRequest/create",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/pullRequest/create", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		prHandler.CreatePullRequest(w, r)
+		s.prHandler.CreatePullRequest(w, r)
 	})
 
-	mux.HandleFunc("/pullRequest/merge",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/pullRequest/merge", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		prHandler.MergePullRequest(w, r)
+		s.prHandler.MergePullRequest(w, r)
 	})
 
-	mux.HandleFunc("/pullRequest/reassign",
-	func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/pullRequest/reassign", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		prHandler.ReassignReviewer(w, r)
+		s.prHandler.ReassignReviewer(w, r)
 	})
 
-	s.srv.Handler = mux
-
+	s.srv.Handler = s.mux
 	return nil
 }
