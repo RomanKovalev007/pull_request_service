@@ -7,21 +7,23 @@ import (
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-type userRepository interface{
+type userRepository interface {
 	SetUserIsActive(ctx context.Context, userID string, isActive bool) (*models.User, error)
-	GetUserPullRequests(ctx context.Context,userID string) ([]models.PullRequestShort, error)
+	GetUserPullRequests(ctx context.Context, userID string) ([]models.PullRequestShort, error)
 }
 
-type UserService struct{
+type UserService struct {
 	userRepo userRepository
 }
 
-func NewUserService(userRepo userRepository) *UserService{
+func NewUserService(userRepo userRepository) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
 func (s *UserService) SetUserIsActive(ctx context.Context, req transport.UserSetActiveRequest) (*transport.UserSetActiveResponse, error) {
-	s.validateSetUserIsActive(req)
+	if err := s.validateSetUserIsActive(req); err != nil {
+		return nil, &ServiceError{Code: err.Error(), Message: "failed to set user active status"}
+	}
 
 	user, err := s.userRepo.SetUserIsActive(ctx, req.UserID, req.IsActive)
 	if err != nil {
@@ -32,11 +34,13 @@ func (s *UserService) SetUserIsActive(ctx context.Context, req transport.UserSet
 		User: *user,
 	}
 
-    return &resp, nil
+	return &resp, nil
 }
 
 func (s *UserService) GetUserPullRequests(ctx context.Context, userID string) (*transport.UserPRsResponse, error) {
-    s.validateGetUserPullRequests(userID)
+	if err := s.validateGetUserPullRequests(userID); err != nil {
+		return nil, &ServiceError{Code: err.Error(), Message: "failed to set user active status"}
+	}
 
 	prs, err := s.userRepo.GetUserPullRequests(ctx, userID)
 	if err != nil {
@@ -44,9 +48,9 @@ func (s *UserService) GetUserPullRequests(ctx context.Context, userID string) (*
 	}
 
 	resp := transport.UserPRsResponse{
-		UserID: userID,
+		UserID:       userID,
 		PullRequests: prs,
 	}
 
-    return &resp, nil
+	return &resp, nil
 }

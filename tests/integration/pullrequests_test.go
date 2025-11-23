@@ -68,7 +68,7 @@ func TestCreatePullRequest_Duplicate(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(createReq)
-	
+
 	req := httptest.NewRequest("POST", "/pullRequest/create", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -123,7 +123,6 @@ func TestMergePullRequest_Success(t *testing.T) {
 	if router == nil {
 		t.Fatal("Test router is not initialized")
 	}
-
 
 	mergeReq := transport.MergePRRequest{
 		PullRequestID: "pr6",
@@ -215,7 +214,7 @@ func TestReassignReviewer_Success(t *testing.T) {
 		t.Error("Expected new reviewer ID")
 	}
 
-	if response.ReplacedBy == reassignReq.OldUserID{
+	if response.ReplacedBy == reassignReq.OldUserID {
 		t.Error("Expected different reviewer after reassignment")
 	}
 

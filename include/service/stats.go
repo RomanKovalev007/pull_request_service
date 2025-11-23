@@ -14,52 +14,52 @@ type statsRepository interface {
 }
 
 type StatsService struct {
-    statsRepo statsRepository
+	statsRepo statsRepository
 }
 
 func NewStatsService(statsRepo statsRepository) *StatsService {
-    return &StatsService{statsRepo: statsRepo}
+	return &StatsService{statsRepo: statsRepo}
 }
 
 func (s *StatsService) GetStats(ctx context.Context) (*models.StatsResponse, error) {
-    userStats, err := s.statsRepo.GetUserStats(ctx)
-    if err != nil {
-        return nil, err
-    }
+	userStats, err := s.statsRepo.GetUserStats(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-    prStats, err := s.statsRepo.GetPRStats(ctx)
-    if err != nil {
-        return nil, err
-    }
+	prStats, err := s.statsRepo.GetPRStats(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-    teamStats, err := s.statsRepo.GetTeamStats(ctx)
-    if err != nil {
-        return nil, err
-    }
+	teamStats, err := s.statsRepo.GetTeamStats(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-    totalStats := models.TotalStats{
+	totalStats := models.TotalStats{
 		TotalUsers: len(userStats),
-		TotalPRs: len(prStats),
+		TotalPRs:   len(prStats),
 		TotalTeams: len(teamStats),
 	}
 
-	for _, team := range teamStats{
+	for _, team := range teamStats {
 		totalStats.TotalActiveReviewers += team.ActiveReviewers
 	}
-	
-	for _, pr := range prStats{
-		if pr.Status == "MERGED"{
+
+	for _, pr := range prStats {
+		if pr.Status == "MERGED" {
 			totalStats.MergedPRs += 1
-		} else{
+		} else {
 			totalStats.OpenPRs += 1
 		}
 	}
 
-    return &models.StatsResponse{
-        UserStats:  userStats,
-        PRStats:    prStats,
-        TeamStats:  teamStats,
-        TotalStats: totalStats,
-        Timestamp:  time.Now(),
-    }, nil
+	return &models.StatsResponse{
+		UserStats:  userStats,
+		PRStats:    prStats,
+		TeamStats:  teamStats,
+		TotalStats: totalStats,
+		Timestamp:  time.Now(),
+	}, nil
 }

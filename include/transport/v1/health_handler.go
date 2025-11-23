@@ -9,18 +9,18 @@ import (
 	"github.com/RomanKovalev007/pull_request_service/include/repository"
 )
 
-type Health struct{
-	Status healthStatus
-	Err string
-	Timestamp string
-	Database databaseStatus
+type Health struct {
+	Status            healthStatus
+	Err               string
+	Timestamp         string
+	Database          databaseStatus
 	Migration_version uint
-	Migration_dirty bool
+	Migration_dirty   bool
 }
 
-const(
-	STATUSHEALTHY healthStatus = "healthy"
-	STATUSUNHEALTHY healthStatus = "unhealthy"
+const (
+	STATUSHEALTHY     healthStatus   = "healthy"
+	STATUSUNHEALTHY   healthStatus   = "unhealthy"
 	DATABASECONNECTED databaseStatus = "connected"
 )
 
@@ -36,7 +36,7 @@ func (s *Server) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(health); err != nil {
 			http.Error(w, "Failed to encode error", http.StatusInternalServerError)
 		}
-	} (w, r)
+	}(w, r)
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -49,7 +49,7 @@ func (s *Server) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	
+
 	version, dirty, err := repository.GetMigrationInfo(s.repo.DSN)
 	if err != nil {
 		health.Status = STATUSUNHEALTHY

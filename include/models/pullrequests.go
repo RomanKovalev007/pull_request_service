@@ -20,6 +20,6 @@ type PullRequestShort struct {
 }
 
 type PRReview struct {
-    PRID     string
-    AuthorID string
+	PRID     string
+	AuthorID string
 }

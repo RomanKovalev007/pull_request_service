@@ -2,7 +2,6 @@ package integration
 
 import (
 	"testing"
-
 )
 
 func TestDBTablesExist(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	Port string `env:"PORT" env-default:"8080"`
-	Timeout string `env:"TIMEOUT" env-default:"30s"`
-	BaseURL string `env:"BASE_URL" env-default:"http://localhost:8080"`
+	Port           string `env:"PORT" env-default:"8080"`
+	Timeout        string `env:"TIMEOUT" env-default:"30s"`
+	BaseURL        string `env:"BASE_URL" env-default:"http://localhost:8080"`
 	Migration_Path string `env:"MIGRATION_PATH" env-default:"file:///migrations"`
 
 	repository.Config

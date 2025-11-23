@@ -1,13 +1,13 @@
 package integration
 
 import (
-    "testing"
+	"testing"
 )
 
 func TestServerInitialization(t *testing.T) {
-    if TestServer == nil {
-        t.Fatal("Test server should not be nil")
-    }
+	if TestServer == nil {
+		t.Fatal("Test server should not be nil")
+	}
 
-    t.Log("Server and router initialized correctly")
+	t.Log("Server and router initialized correctly")
 }

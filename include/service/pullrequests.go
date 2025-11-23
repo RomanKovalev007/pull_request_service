@@ -7,17 +7,17 @@ import (
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-type prRepository interface{
+type prRepository interface {
 	CreatePullRequest(ctx context.Context, req models.PullRequestShort) (*models.PullRequest, error)
 	MergePullRequest(ctx context.Context, prID string) (*models.PullRequest, error)
 	ReassignReviewer(ctx context.Context, prID, oldUserID string) (*models.PullRequest, string, error)
 }
 
-type PrService struct{
+type PrService struct {
 	prRepo prRepository
 }
 
-func NewPrService(prRepo prRepository) *PrService{
+func NewPrService(prRepo prRepository) *PrService {
 	return &PrService{prRepo: prRepo}
 }
 
@@ -39,7 +39,7 @@ func (s *PrService) CreatePullRequest(ctx context.Context, req transport.CreateP
 
 	resp := transport.CreatePRResponse{PullRequest: *pr}
 
-    return &resp, nil
+	return &resp, nil
 }
 
 func (s *PrService) MergePullRequest(ctx context.Context, req transport.MergePRRequest) (*transport.MergePRResponse, error) {
@@ -54,7 +54,7 @@ func (s *PrService) MergePullRequest(ctx context.Context, req transport.MergePRR
 
 	resp := transport.MergePRResponse{PullRequest: *pr}
 
-    return &resp, nil
+	return &resp, nil
 }
 
 func (s *PrService) ReassignReviewer(ctx context.Context, req transport.ReassignRequest) (*transport.ReassignResponse, error) {
@@ -66,8 +66,8 @@ func (s *PrService) ReassignReviewer(ctx context.Context, req transport.Reassign
 	if err != nil {
 		return nil, &ServiceError{Code: err.Error(), Message: "failed to reassign pull request"}
 	}
-	
+
 	resp := transport.ReassignResponse{PullRequest: *pr, ReplacedBy: newID}
 
-    return &resp, nil
+	return &resp, nil
 }

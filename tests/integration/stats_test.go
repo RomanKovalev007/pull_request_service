@@ -23,12 +23,10 @@ func TestGetStats_Success(t *testing.T) {
 		return
 	}
 
-
 	var response map[string]interface{}
 	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Failed to parse stats response: %v", err)
 	}
-
 
 	expectedFields := []string{"user_stats", "pr_stats", "team_stats", "total_stats"}
 	for _, field := range expectedFields {

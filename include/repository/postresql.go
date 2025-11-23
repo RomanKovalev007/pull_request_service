@@ -12,8 +12,8 @@ type Config struct {
 	DBPort     string `env:"POSTGRES_PORT" env-default:"5432"`
 	DBUser     string `env:"POSTGRES_USER" env-default:"postgres"`
 	DBPassword string `env:"POSTGRES_PASSWORD" env-default:"postgres"`
-	DBName   string `env:"POSTGRES_DB" env-default:"pr_reviewer"`
-	DSN      string
+	DBName     string `env:"POSTGRES_DB" env-default:"pr_reviewer"`
+	DSN        string
 }
 
 func (c *Config) FormatConnectionString() string {
@@ -50,10 +50,10 @@ func NewDB(cfg Config) (*Repo, error) {
 	db.SetConnMaxLifetime(5 * 60)
 
 	return &Repo{
-		DB:             db,
-		DSN:            cfg.DSN,
-		UserRepository: NewUserRepository(db),
-		TeamRepository: NewTeamRepository(db),
-		PrRepository:   NewPrRepository(db),
-        StatsRepository: NewStatsRepository(db),}, nil
+		DB:              db,
+		DSN:             cfg.DSN,
+		UserRepository:  NewUserRepository(db),
+		TeamRepository:  NewTeamRepository(db),
+		PrRepository:    NewPrRepository(db),
+		StatsRepository: NewStatsRepository(db)}, nil
 }

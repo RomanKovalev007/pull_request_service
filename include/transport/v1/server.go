@@ -11,34 +11,33 @@ import (
 	transport "github.com/RomanKovalev007/pull_request_service/include/transport/models"
 )
 
-type Service interface{
+type Service interface {
 	CreateTeam(ctx context.Context, req models.Team) (*transport.TeamCreateResponse, error)
 	GetTeam(ctx context.Context, teamName string) (*models.Team, error)
 
 	SetUserIsActive(ctx context.Context, req transport.UserSetActiveRequest) (*transport.UserSetActiveResponse, error)
 	GetUserPullRequests(ctx context.Context, userID string) (*transport.UserPRsResponse, error)
-	
-	CreatePullRequest(ctx context.Context, req transport.CreatePRRequest) (*transport.CreatePRResponse, error) 
-	MergePullRequest(ctx context.Context, req transport.MergePRRequest) (*transport.MergePRResponse, error)
-	ReassignReviewer(ctx context.Context, req transport.ReassignRequest) (*transport.ReassignResponse, error) 
-}
 
+	CreatePullRequest(ctx context.Context, req transport.CreatePRRequest) (*transport.CreatePRResponse, error)
+	MergePullRequest(ctx context.Context, req transport.MergePRRequest) (*transport.MergePRResponse, error)
+	ReassignReviewer(ctx context.Context, req transport.ReassignRequest) (*transport.ReassignResponse, error)
+}
 
 var (
 	defaultHeaderTimeout = time.Second * 5
-	defaultIdleTimeout = time.Second * 30
+	defaultIdleTimeout   = time.Second * 30
 )
 
 type Server struct {
-	srv *http.Server
-	repo  *repository.Repo
-	mux *http.ServeMux
-	
-	teamService *service.TeamService
-	userService *service.UserService
-	prService *service.PrService
+	srv  *http.Server
+	repo *repository.Repo
+	mux  *http.ServeMux
+
+	teamService  *service.TeamService
+	userService  *service.UserService
+	prService    *service.PrService
 	statsService *service.StatsService
-	
+
 	// Добавляем поля для обработчиков
 	teamHandler  *TeamHandler
 	userHandler  *UserHandler
@@ -47,30 +46,30 @@ type Server struct {
 }
 
 func NewServer(port string, db *repository.Repo) *Server {
-    mux := http.NewServeMux()
-    
+	mux := http.NewServeMux()
+
 	srv := http.Server{
 		Addr:              ":" + port,
 		Handler:           mux,
 		IdleTimeout:       defaultIdleTimeout,
 		ReadHeaderTimeout: defaultHeaderTimeout,
 	}
-	
+
 	server := &Server{
-		srv: &srv,
-		repo:  db,
-		mux: mux,
-		teamService: service.NewTeamService(db.TeamRepository),
-		userService: service.NewUserService(db.UserRepository),
-		prService: service.NewPrService(db.PrRepository),
+		srv:          &srv,
+		repo:         db,
+		mux:          mux,
+		teamService:  service.NewTeamService(db.TeamRepository),
+		userService:  service.NewUserService(db.UserRepository),
+		prService:    service.NewPrService(db.PrRepository),
 		statsService: service.NewStatsService(db.StatsRepository),
 	}
-	
+
 	server.teamHandler = NewTeamHandler(server.teamService)
 	server.userHandler = NewUserHandler(server.userService)
 	server.prHandler = NewPRHandler(server.prService)
 	server.statsHandler = NewStatsHandler(server.statsService)
-	
+
 	return server
 }
 
@@ -83,13 +82,13 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 func (s *Server) GetRouter() http.Handler {
-    return s.mux
+	return s.mux
 }
 
 func (s *Server) RegisterHandlers() error {
-    if s.mux == nil {
-        s.mux = http.NewServeMux()
-    }
+	if s.mux == nil {
+		s.mux = http.NewServeMux()
+	}
 
 	s.mux.HandleFunc("/health", s.HealthCheck)
 	s.mux.HandleFunc("/stats", s.statsHandler.GetStats)

@@ -1,4 +1,4 @@
-.PHONY: test docker-run clean
+.PHONY: test docker-run clean full_clean
 
 test:
 	docker-compose -f docker-compose.test.yml up --build
@@ -13,3 +13,11 @@ clean:
 full_clean:
 	docker-compose down -v
 	docker-compose -f docker-compose.test.yml down -v 
+
+.PHONY: lint
+lint:
+	golangci-lint run ./...
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix ./...
