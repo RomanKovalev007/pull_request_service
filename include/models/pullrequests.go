@@ -18,3 +18,8 @@ type PullRequestShort struct {
 	AuthorID        string `json:"author_id"`
 	Status          string `json:"status"`
 }
+
+type PRReview struct {
+    PRID     string
+    AuthorID string
+}
