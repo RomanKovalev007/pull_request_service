@@ -1,3 +1,4 @@
-/.env
+
 /openapi.yml
 /.42c
+/test-results
